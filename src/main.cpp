@@ -13,20 +13,19 @@
 /*                                            */
 Adafruit_BNO055 bno = Adafruit_BNO055(55); // i2c address: 0x29                        // i2c address: 0x42
 
-/*                                            */
-/* Function Declaration                       */
-/*                                            */
-String get_bno055(sensors_event_t* event);
-bool calibrate(bool printflag = false);
+
+bool calibrate(bool);
+void printCalibration(uint8_t, uint8_t, uint8_t);
 
 // Quaternion functions
 void zeroQuat();
-double quaternion_norm(imu::Quaternion& q);
-imu::Quaternion quaternion_conjugate(imu::Quaternion& q);
-imu::Quaternion quaternion_normalize(imu::Quaternion& q);
-imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quaternion& q2);
-imu::Quaternion quaternion_inverse(imu::Quaternion& q);
-std::vector <double> quat_to_euler(const imu::Quaternion& q);
+double quaternion_norm(imu::Quaternion&);
+std::vector <double> quat_to_euler(const imu::Quaternion&);
+
+imu::Quaternion quaternion_conjugate(imu::Quaternion&);
+imu::Quaternion quaternion_normalize(imu::Quaternion&);
+imu::Quaternion quaternion_inverse(imu::Quaternion&);
+imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
 /*                                            */
 /* Constants and Globals                      */
@@ -38,9 +37,6 @@ unsigned long start_time;
 uint16_t DECIMALS = 4;
 imu::Quaternion offset_norm;
 sensor_t sensor;
-
-imu::Quaternion reference_quat;
-imu::Quaternion inverse_quat;
 
 void setup() {
 
@@ -61,8 +57,6 @@ void setup() {
     }
 
     bno.setExtCrystalUse(true);
-    reference_quat = bno.getQuat();
-    inverse_quat = quaternion_inverse(reference_quat);
     start_time = millis();
 
 }
