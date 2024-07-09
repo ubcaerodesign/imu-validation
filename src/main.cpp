@@ -100,21 +100,24 @@ void loop() {
 }
 
 bool calibrate() {
-    String calibration = "";
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
-
-    // print calibration levels of everything
-    calibration += "Calibrating... ";
-    calibration += "Gyro: "  ;    calibration += String(gyro_cal);
-    calibration += ", Accel: " ;    calibration += String(accel_cal);
-    calibration += ", Magnet: ";    calibration += String(mag_cal);
-    Serial.println(calibration);
+    printCalibration(gyro_cal, accel_cal, mag_cal);
 
     // successfully calibrated if system and sensors are all calibrated fully ( =3 )
     return ( gyro_cal + accel_cal + mag_cal == 9 );
 }
 
+// Print calibration levels of everything
+void printCalibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
+    String calibration = "";
+
+    calibration += "Calibrating... ";
+    calibration += "Gyro: "  ;    calibration += String(gyro_cal);
+    calibration += ", Accel: " ;    calibration += String(accel_cal);
+    calibration += ", Magnet: ";    calibration += String(mag_cal);
+    Serial.println(calibration);
+}
 
 void zeroQuat() {
     imu::Quaternion offset = bno.getQuat();
