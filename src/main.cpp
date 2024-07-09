@@ -44,83 +44,77 @@ imu::Quaternion inverse_quat;
 
 void setup() {
   
-  // Wire.begin();
-  Serial.begin(115200);
-  while (!Serial) delay(10);
+    // Wire.begin();
+    Serial.begin(115200);
+    while (!Serial) delay(10);
 
-  // attempt to connect to bno every 2 seconds until connection formed
-  while (!bno.begin())
-  {
-    Serial.println("No BNO055 detected");
-    delay(2000);
-  }
+    // attempt to connect to bno every 2 seconds until connection formed
+    while (!bno.begin()) {
+        Serial.println("No BNO055 detected");
+        delay(2000);
+    }
 
-  // keep checking calibration levels every 2 seconds until fully calibrated
-  while (!calibrate()) {
-    delay(2000);
-  }
+    // keep checking calibration levels every 2 seconds until fully calibrated
+    while (!calibrate()) {
+        delay(2000);
+    }
 
-  bno.setExtCrystalUse(true);
-  reference_quat = bno.getQuat();
-  inverse_quat = quaternion_inverse(reference_quat);
-  start_time = millis();
+    bno.setExtCrystalUse(true);
+    reference_quat = bno.getQuat();
+    inverse_quat = quaternion_inverse(reference_quat);
+    start_time = millis();
 
 }
 
 void loop() {
 
-  if (millis() - lastSend > 20) {
+    if (millis() - lastSend > 20) {
     //ensures that the sensor data is collected and transmitted at a frequency of approximately 20 milliseconds (50hz) and there is a 1-ms delay between each round of data collection (atm).
 
-    lastSend = millis();
+        lastSend = millis();
 
-    String quaternion   ,
-           acceleration ,
-           angularvel   
-           = "0";
+        String quaternion, acceleration, angularvel, message = "0";
 
-    String message = "0";
+        sensors_event_t angVelocityData , AccelData;
 
-    sensors_event_t angVelocityData , AccelData;
+        imu::Quaternion measured_quat = bno.getQuat();
 
-    imu::Quaternion measured_quat = bno.getQuat();
+        // Serial.print(measured_quat.w());
+        // Serial.print(measured_quat.x());
+        // Serial.print(measured_quat.y());
+        // Serial.print(measured_quat.z());
+        // Serial.println();
 
-    // Serial.print(measured_quat.w());
-    // Serial.print(measured_quat.x());
-    // Serial.print(measured_quat.y());
-    // Serial.print(measured_quat.z());
-    // Serial.println();
+        // imu::Quaternion quat_data = quaternion_multiply(inverse_quat, measured_quat);
+        std::vector <double> euler_angles = quat_to_euler(measured_quat);
 
-    // imu::Quaternion quat_data = quaternion_multiply(inverse_quat, measured_quat);
-    std::vector <double> euler_angles = quat_to_euler(measured_quat);
+        double roll = euler_angles[0];
+        double pitch = euler_angles[1];
+        double yaw = euler_angles[2];
 
-    double roll = euler_angles[0];
-    double pitch = euler_angles[1];
-    double yaw = euler_angles[2];
+        Serial.println(String(millis() - start_time) + "," + String(roll, DECIMALS));
 
-    Serial.println(String(millis() - start_time) + "," + String(roll, DECIMALS));
+    }
 
-  }
-
-  delay(10);
+    delay(10);
 }
 
 bool calibrate() {
-  String calibration = "";
-  uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
-  bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
+    String calibration = "";
+    uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
+    bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
 
-  // print calibration levels of everything
-  calibration += "Calibrating... ";
-  calibration += "System: "  ;    calibration += String(system_cal);
-  calibration += ", Gyro: "  ;    calibration += String(gyro_cal);
-  calibration += ", Accel: " ;    calibration += String(accel_cal);
-  calibration += ", Magnet: ";    calibration += String(mag_cal);
-  Serial.println(calibration);
+    // print calibration levels of everything
+    calibration += "Calibrating... ";
+    calibration += "Gyro: "  ;    calibration += String(gyro_cal);
+    calibration += ", Accel: " ;    calibration += String(accel_cal);
+    calibration += ", Magnet: ";    calibration += String(mag_cal);
+    Serial.println(calibration);
 
-  // successfully calibrated if system and sensors are all calibrated fully ( =3 )
-  return ( system_cal + gyro_cal + accel_cal + mag_cal == 12 );
+    // successfully calibrated if system and sensors are all calibrated fully ( =3 )
+    return ( gyro_cal + accel_cal + mag_cal == 9 );
 }
+
 
 void zeroQuat() {
     imu::Quaternion offset = bno.getQuat();
@@ -129,51 +123,51 @@ void zeroQuat() {
 }
 
 double quaternion_norm(imu::Quaternion& q) {
-  return sqrt(q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
+    return sqrt(q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
 }
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
-  return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z()); //IF USING NED, MAKE Z NEGATIVE TOO!
+    return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z()); //IF USING NED, MAKE Z NEGATIVE TOO!
 }
 
 imu::Quaternion quaternion_normalize(imu::Quaternion& q) {
-  double norm = quaternion_norm(q);
-  return imu::Quaternion(q.w() / norm, q.x() / norm, q.y() / norm, q.z() / norm);
+    double norm = quaternion_norm(q);
+    return imu::Quaternion(q.w() / norm, q.x() / norm, q.y() / norm, q.z() / norm);
 }
 
 imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
-  imu::Quaternion conjugate = quaternion_conjugate(q);
-  return quaternion_normalize(conjugate);
+    imu::Quaternion conjugate = quaternion_conjugate(q);
+    return quaternion_normalize(conjugate);
 }
 
 imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quaternion& q2) {
-  return imu::Quaternion(
-    q1.w() * q2.w() - q1.x() * q2.x() - q1.y() * q2.y() - q1.z() * q2.z(),
-    q1.w() * q2.x() + q1.x() * q2.w() + q1.y() * q2.z() - q1.z() * q2.y(),
-    q1.w() * q2.y() - q1.x() * q2.z() + q1.y() * q2.w() + q1.z() * q2.x(),
-    q1.w() * q2.z() + q1.x() * q2.y() - q1.y() * q2.x() + q1.z() * q2.w()
-  );
+    return imu::Quaternion(
+        q1.w() * q2.w() - q1.x() * q2.x() - q1.y() * q2.y() - q1.z() * q2.z(),
+        q1.w() * q2.x() + q1.x() * q2.w() + q1.y() * q2.z() - q1.z() * q2.y(),
+        q1.w() * q2.y() - q1.x() * q2.z() + q1.y() * q2.w() + q1.z() * q2.x(),
+        q1.w() * q2.z() + q1.x() * q2.y() - q1.y() * q2.x() + q1.z() * q2.w()
+    );
 }
 
 std::vector <double> quat_to_euler(const imu::Quaternion& q) {
-  std::vector <double> euler_angles(3);
+    std::vector <double> euler_angles(3);
 
-  // two initial conditionals are for catching gimbal lock while converting to Euler
-  if (abs(q.x() * q.y() + q.z() * q.w() - 0.5) < 0.01) {
-    euler_angles[0] = 2 * atan2(q.x(), q.w());
-    euler_angles[1] = M_PI / 2;
-    euler_angles[2] = 0;
-  }
-  else if (abs(q.x() * q.y() + q.z() * q.w() + 0.5) < 0.01) {
-    euler_angles[0] = -2 * atan2(q.x(), q.w());
-    euler_angles[1] = -M_PI / 2;
-    euler_angles[2] = 0;
-  }
-  else {
-    euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
-    euler_angles[1] = asin(2 * (q.w() * q.y() - q.x() * q.z()));
-    euler_angles[2] = atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
-  }
+    // two initial conditionals are for catching singularities while converting to Euler
+    if (abs(q.x() * q.y() + q.z() * q.w() - 0.5) < 0.01) {
+        euler_angles[0] = 2 * atan2(q.x(), q.w());
+        euler_angles[1] = M_PI / 2;
+        euler_angles[2] = 0;
+    }
+    else if (abs(q.x() * q.y() + q.z() * q.w() + 0.5) < 0.01) {
+        euler_angles[0] = -2 * atan2(q.x(), q.w());
+        euler_angles[1] = -M_PI / 2;
+        euler_angles[2] = 0;
+    }
+    else {
+        euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
+        euler_angles[1] = asin(2 * (q.w() * q.y() - q.x() * q.z()));
+        euler_angles[2] = atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
+    }
 
-  return euler_angles;
+    return euler_angles;
 }
