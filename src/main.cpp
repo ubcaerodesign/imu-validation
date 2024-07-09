@@ -12,9 +12,7 @@
 /*          Constants and Globals             */
 /*                                            */
 
-// sensor objects
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-adafruit_bno055_offsets_t bno_offsets;
 sensor_t sensor;
 
 int eeprom_address;
@@ -28,20 +26,20 @@ uint16_t DECIMALS = 4;
 /*                                            */
 /*             Function Prototypes            */
 /*                                            */
+
 bool calibrate(bool);
 void print_calibration(uint8_t, uint8_t, uint8_t);
 
-bool get_eeprom(adafruit_bno055_offsets_t&);
-void put_eeprom(adafruit_bno055_offsets_t);
-
-double quaternion_norm(imu::Quaternion&);
-std::vector <double> quat_to_euler(const imu::Quaternion&);
+bool get_eeprom();
+void put_eeprom();
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion&);
 imu::Quaternion quaternion_normalize(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
+double quaternion_norm(imu::Quaternion&);
+std::vector <double> quat_to_euler(const imu::Quaternion&);
 
 void setup() {
 
@@ -63,8 +61,8 @@ void setup() {
 
     bno.setExtCrystalUse(true);
     start_time = millis();
-
 }
+
 
 void loop() {
 
@@ -99,6 +97,7 @@ void loop() {
     delay(10);
 }
 
+
 bool calibrate(bool printflag) {
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
@@ -112,6 +111,7 @@ bool calibrate(bool printflag) {
     return ( gyro_cal + accel_cal + mag_cal == 9 );
 }
 
+
 // print calibration levels of everything
 void print_calibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
     String calibration = "";
@@ -123,23 +123,55 @@ void print_calibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
     Serial.println(calibration);
 }
 
-double quaternion_norm(imu::Quaternion& q) {
-    return sqrt(q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
+
+bool get_eeprom() {
+    adafruit_bno055_offsets_t bno_offsets;
+    EEPROM.get(eeprom_address, bno_id);
+    bno.getSensor(&sensor);
+
+    // no previous offsets stored
+    if (bno_id != sensor.sensor_id) {
+        return false;
+    }
+
+    eeprom_address += sizeof(long);
+    EEPROM.get(eeprom_address, bno_offsets);
+    bno.setSensorOffsets(bno_offsets);
+
+    return true;
 }
+
+void put_eeprom() {
+    adafruit_bno055_offsets_t new_offsets;
+    bno.getSensorOffsets(new_offsets);
+
+    eeprom_address = 0;
+    bno.getSensor(&sensor);
+    bno_id = sensor.sensor_id;
+
+    EEPROM.put(eeprom_address, bno_id);
+
+    eeprom_address += sizeof(long);
+    EEPROM.put(eeprom_address, new_offsets);
+}
+
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
 }
+
 
 imu::Quaternion quaternion_normalize(imu::Quaternion& q) {
     double norm = quaternion_norm(q);
     return imu::Quaternion(q.w() / norm, q.x() / norm, q.y() / norm, q.z() / norm);
 }
 
+
 imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     imu::Quaternion conjugate = quaternion_conjugate(q);
     return quaternion_normalize(conjugate);
 }
+
 
 imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quaternion& q2) {
     return imu::Quaternion(
@@ -149,6 +181,12 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quater
         q1.w() * q2.z() + q1.x() * q2.y() - q1.y() * q2.x() + q1.z() * q2.w()
     );
 }
+
+
+double quaternion_norm(imu::Quaternion& q) {
+    return sqrt(q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
+}
+
 
 // convert quaternion to standard roll/pitch/yaw angles
 std::vector <double> quat_to_euler(const imu::Quaternion& q) {
