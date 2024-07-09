@@ -14,7 +14,11 @@
 
 // sensor objects
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
+adafruit_bno055_offsets_t bno_offsets;
 sensor_t sensor;
+
+int eeprom_address;
+long bno_id;
 
 int lastSend = 0;
 unsigned long start_time;
@@ -25,7 +29,10 @@ uint16_t DECIMALS = 4;
 /*             Function Prototypes            */
 /*                                            */
 bool calibrate(bool);
-void printCalibration(uint8_t, uint8_t, uint8_t);
+void print_calibration(uint8_t, uint8_t, uint8_t);
+
+bool get_eeprom(adafruit_bno055_offsets_t&);
+void put_eeprom(adafruit_bno055_offsets_t);
 
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
@@ -43,7 +50,7 @@ void setup() {
         delay(10);
     }
 
-    // attempt to connect to bno every 2 seconds until connection formed
+    // attempt to connect every 2 seconds until connection successful
     while (!bno.begin()) {
         Serial.println("No BNO055 detected");
         delay(2000);
@@ -96,17 +103,17 @@ bool calibrate(bool printflag) {
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
 
-    // print 
+    // print calibration levels if wanted
     if (printflag) {
-        printCalibration(gyro_cal, accel_cal, mag_cal);
+        print_calibration(gyro_cal, accel_cal, mag_cal);
     }
 
     // successfully calibrated if system and sensors are all calibrated fully ( =3 )
     return ( gyro_cal + accel_cal + mag_cal == 9 );
 }
 
-// Print calibration levels of everything
-void printCalibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
+// print calibration levels of everything
+void print_calibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
     String calibration = "";
 
     calibration += "Calibrating... ";
@@ -143,6 +150,7 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quater
     );
 }
 
+// convert quaternion to standard roll/pitch/yaw angles
 std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     std::vector <double> euler_angles(3);
 
