@@ -100,30 +100,6 @@ void loop() {
 
     Serial.println(String(millis() - start_time) + "," + String(roll, DECIMALS));
 
-
-    // Update all sensors and make them strings to send ...........................................              
-
-    // imu::Quaternion quatData = bno.getQuat();
-    // bno.getEvent(&angVelocityData   , Adafruit_BNO055::VECTOR_GYROSCOPE); // rad/s
-    // bno.getEvent(&AccelData   , Adafruit_BNO055::VECTOR_ACCELEROMETER);   // m/s^2
-
-
-    // message += "{"  ;
-    // message += "\"q3\": "     ; message += String(quatData.w(), DECIMALS); message += ",";
-    // message += "\"q0\": "     ; message += String(quatData.x(), DECIMALS); message += ",";
-    // message += "\"q1\": "     ; message += String(quatData.y(), DECIMALS); message += ",";
-    // message += "\"q2\": "     ; message += String(quatData.z()*(-1), DECIMALS); message += ",";
-    // message += "\"accel_x\": "; message += String(AccelData.acceleration.x, DECIMALS); message += ",";
-    // message += "\"accel_y\": "; message += String(AccelData.acceleration.y, DECIMALS); message += ",";
-    // message += "\"accel_z\": "; message += String(AccelData.acceleration.z*(-1), DECIMALS); message += ",";
-    // message += "\"gyro_x\": " ; message += String(angVelocityData.gyro.x, DECIMALS); message += ",";
-    // message += "\"gyro_y\": " ; message += String(angVelocityData.gyro.y, DECIMALS); message += ",";
-    // message += "\"gyro_z\": " ; message += String(angVelocityData.gyro.z*(-1), DECIMALS); message += ",";
-    // message += "\"time\": "   ; message += lastSend     ;
-    // message += "}";
-
-    // Serial.println(message);
-
   }
 
   delay(10);
