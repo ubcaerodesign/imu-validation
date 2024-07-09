@@ -30,7 +30,7 @@ uint16_t DECIMALS = 4;
 bool calibrate(bool);
 void print_calibration(uint8_t, uint8_t, uint8_t);
 
-bool get_eeprom();
+void get_eeprom();
 void put_eeprom();
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion&);
@@ -54,10 +54,16 @@ void setup() {
         delay(2000);
     }
 
+    // load in offsets from EEPROM if stored
+    get_eeprom();
+
     // keep checking calibration levels every 2 seconds until fully calibrated
     while (!calibrate(true)) {
         delay(2000);
     }
+
+    // load in fresher offsets into EEPROM memory
+    put_eeprom();
 
     bno.setExtCrystalUse(true);
     start_time = millis();
@@ -67,37 +73,31 @@ void setup() {
 void loop() {
 
     if (millis() - lastSend > 20) {
-    //ensures that the sensor data is collected and transmitted at a frequency of approximately 20 milliseconds (50hz) and there is a 1-ms delay between each round of data collection (atm).
-
+        
         lastSend = millis();
 
-        String quaternion, acceleration, angularvel, message = "0";
-
-        sensors_event_t angVelocityData , AccelData;
+        String message = "$";
 
         imu::Quaternion measured_quat = bno.getQuat();
-
-        // Serial.print(measured_quat.w());
-        // Serial.print(measured_quat.x());
-        // Serial.print(measured_quat.y());
-        // Serial.print(measured_quat.z());
-        // Serial.println();
-
-        // imu::Quaternion quat_data = quaternion_multiply(inverse_quat, measured_quat);
         std::vector <double> euler_angles = quat_to_euler(measured_quat);
 
         double roll = euler_angles[0];
         double pitch = euler_angles[1];
         double yaw = euler_angles[2];
 
-        Serial.println(String(millis() - start_time) + "," + String(roll, DECIMALS));
+        message += String(millis() - start_time) + ": ";
+        message += String(roll * 180 / M_PI, DECIMALS) + ",";
+        message += String(pitch * 180 / M_PI, DECIMALS) + ",";
+        message += String(yaw * 180 / M_PI, DECIMALS);
 
+        Serial.println(message);
     }
 
     delay(10);
 }
 
 
+// checks if sensors are fully calibrated
 bool calibrate(bool printflag) {
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
@@ -124,23 +124,26 @@ void print_calibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
 }
 
 
-bool get_eeprom() {
+// fetches the stored offsets from EEPROM
+void get_eeprom() {
     adafruit_bno055_offsets_t bno_offsets;
     EEPROM.get(eeprom_address, bno_id);
     bno.getSensor(&sensor);
 
     // no previous offsets stored
     if (bno_id != sensor.sensor_id) {
-        return false;
+        return;
     }
 
     eeprom_address += sizeof(long);
     EEPROM.get(eeprom_address, bno_offsets);
     bno.setSensorOffsets(bno_offsets);
 
-    return true;
+    return;
 }
 
+
+// stores new offsets in EEPROM
 void put_eeprom() {
     adafruit_bno055_offsets_t new_offsets;
     bno.getSensorOffsets(new_offsets);
