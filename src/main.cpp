@@ -9,16 +9,24 @@
 #include <vector.h>
 
 /*                                            */
-/* Sensor Objects and variables               */
+/*          Constants and Globals             */
 /*                                            */
-Adafruit_BNO055 bno = Adafruit_BNO055(55); // i2c address: 0x29                        // i2c address: 0x42
+
+// sensor objects
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+sensor_t sensor;
+
+int lastSend = 0;
+unsigned long start_time;
+uint16_t DECIMALS = 4;
 
 
+/*                                            */
+/*             Function Prototypes            */
+/*                                            */
 bool calibrate(bool);
 void printCalibration(uint8_t, uint8_t, uint8_t);
 
-// Quaternion functions
-void zeroQuat();
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
 
@@ -27,16 +35,6 @@ imu::Quaternion quaternion_normalize(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
-/*                                            */
-/* Constants and Globals                      */
-/*                                            */
-int lastSend = 0;
-unsigned long start_time;
-
-/* for bno055 */
-uint16_t DECIMALS = 4;
-imu::Quaternion offset_norm;
-sensor_t sensor;
 
 void setup() {
 
@@ -118,18 +116,12 @@ void printCalibration(uint8_t gyro_cal, uint8_t accel_cal, uint8_t mag_cal) {
     Serial.println(calibration);
 }
 
-void zeroQuat() {
-    imu::Quaternion offset = bno.getQuat();
-    imu::Quaternion offset_conj = quaternion_conjugate(offset);
-    offset_norm = quaternion_normalize(offset_conj);
-}
-
 double quaternion_norm(imu::Quaternion& q) {
     return sqrt(q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z());
 }
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
-    return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z()); //IF USING NED, MAKE Z NEGATIVE TOO!
+    return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
 }
 
 imu::Quaternion quaternion_normalize(imu::Quaternion& q) {
