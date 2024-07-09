@@ -17,7 +17,7 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55); // i2c address: 0x29                 
 /* Function Declaration                       */
 /*                                            */
 String get_bno055(sensors_event_t* event);
-bool calibrate();
+bool calibrate(bool printflag = false);
 
 // Quaternion functions
 void zeroQuat();
@@ -43,10 +43,11 @@ imu::Quaternion reference_quat;
 imu::Quaternion inverse_quat;
 
 void setup() {
-  
-    // Wire.begin();
+
     Serial.begin(115200);
-    while (!Serial) delay(10);
+    while (!Serial) {
+        delay(10);
+    }
 
     // attempt to connect to bno every 2 seconds until connection formed
     while (!bno.begin()) {
@@ -55,7 +56,7 @@ void setup() {
     }
 
     // keep checking calibration levels every 2 seconds until fully calibrated
-    while (!calibrate()) {
+    while (!calibrate(true)) {
         delay(2000);
     }
 
@@ -99,10 +100,14 @@ void loop() {
     delay(10);
 }
 
-bool calibrate() {
+bool calibrate(bool printflag) {
     uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
     bno.getCalibration(&system_cal, &gyro_cal, &accel_cal, &mag_cal);
-    printCalibration(gyro_cal, accel_cal, mag_cal);
+
+    // print 
+    if (printflag) {
+        printCalibration(gyro_cal, accel_cal, mag_cal);
+    }
 
     // successfully calibrated if system and sensors are all calibrated fully ( =3 )
     return ( gyro_cal + accel_cal + mag_cal == 9 );
@@ -155,7 +160,7 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quater
 std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     std::vector <double> euler_angles(3);
 
-    // two initial conditionals are for catching singularities while converting to Euler
+    // initial conditionals are for catching singularities when converting to Euler
     if (abs(q.x() * q.y() + q.z() * q.w() - 0.5) < 0.01) {
         euler_angles[0] = 2 * atan2(q.x(), q.w());
         euler_angles[1] = M_PI / 2;
