@@ -105,69 +105,6 @@ void loop() {
   delay(10);
 }
 
-String get_bno055(sensors_event_t* event) {
-  String w = "err";
-  String x = "err";
-  String y = "err";
-  String z = "err";
-
-  if (event->type == SENSOR_TYPE_ACCELEROMETER) {
-    x = String(event->acceleration.x, DECIMALS);
-    y = String(event->acceleration.y, DECIMALS);
-    z = String(event->acceleration.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-
-  else if (event->type == SENSOR_TYPE_ORIENTATION) {
-    x = String(event->orientation.x, DECIMALS);
-    y = String(event->orientation.y, DECIMALS);
-    z = String(event->orientation.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-
-  else if (event->type == SENSOR_TYPE_MAGNETIC_FIELD) {
-    x = String(event->magnetic.x, DECIMALS);
-    y = String(event->magnetic.y, DECIMALS);
-    z = String(event->magnetic.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-
-  else if (event->type == SENSOR_TYPE_GYROSCOPE) {
-    x = String(event->gyro.x, DECIMALS);
-    y = String(event->gyro.y, DECIMALS);
-    z = String(event->gyro.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-  else if (event->type == SENSOR_TYPE_ROTATION_VECTOR) {
-    x = String(event->gyro.x, DECIMALS);
-    y = String(event->gyro.y, DECIMALS);
-    z = String(event->gyro.z, DECIMALS);
-
-  }
-
-  else if (event->type == SENSOR_TYPE_LINEAR_ACCELERATION) {
-    x = String(event->acceleration.x, DECIMALS);
-    y = String(event->acceleration.y, DECIMALS);
-    z = String(event->acceleration.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-
-  else if (event->type == SENSOR_TYPE_GRAVITY) {
-    x = String(event->acceleration.x, DECIMALS);
-    y = String(event->acceleration.y, DECIMALS);
-    z = String(event->acceleration.z, DECIMALS);
-
-    return String(x + "," + y + "," + z);
-  }
-
-  return "err";
-}
-
 bool calibrate() {
   String calibration = "";
   uint8_t system_cal, gyro_cal, accel_cal, mag_cal;
