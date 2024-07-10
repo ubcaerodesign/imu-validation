@@ -73,7 +73,7 @@ void setup() {
 void loop() {
 
     if (millis() - lastSend > 20) {
-        
+
         lastSend = millis();
 
         String message = "$";
@@ -196,12 +196,14 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     std::vector <double> euler_angles(3);
 
     // initial conditionals are for catching singularities when converting to Euler
-    if (abs(q.x() * q.y() + q.z() * q.w() - 0.5) < 0.01) {
+    double test = q.x() * q.y() + q.z() * q.w();
+
+    if (test > 0.499) {
         euler_angles[0] = 2 * atan2(q.x(), q.w());
         euler_angles[1] = M_PI / 2;
         euler_angles[2] = 0;
     }
-    else if (abs(q.x() * q.y() + q.z() * q.w() + 0.5) < 0.01) {
+    else if (test < -0.499) {
         euler_angles[0] = -2 * atan2(q.x(), q.w());
         euler_angles[1] = -M_PI / 2;
         euler_angles[2] = 0;
