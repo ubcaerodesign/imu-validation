@@ -209,20 +209,20 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     double test = q.x() * q.y() + q.z() * q.w();
 
     // initial conditionals are for catching singularities when converting to Euler
-    if (test > 0.499 * unit) {
+    if (test > 0.4995 * unit) {
         euler_angles[0] = 0;
         euler_angles[1] = M_PI / 2;
         euler_angles[2] = 2 * atan2(q.x(), q.w());
     }
-    else if (test < -0.499 * unit) {
+    else if (test < -0.4995 * unit) {
         euler_angles[0] = 0;
         euler_angles[1] = -M_PI / 2;
         euler_angles[2] = -2 * atan2(q.x(), q.w());
     }
     else {
-        euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), 1 - 2 * (q.x() * q.x() + q.y() * q.y()));
-        euler_angles[1] = asin(2 * (q.w() * q.y() - q.x() * q.z()));
-        euler_angles[2] = atan2(2 * (q.w() * q.z() + q.x() * q.y()), 1 - 2 * (q.y() * q.y() + q.z() * q.z()));
+        euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), sq_y + sq_w - sq_x - sq_z);
+        euler_angles[1] = asin(2 * test / unit);
+        euler_angles[2] = atan2(2 * (q.w() * q.y() - q.x() * q.z()), sq_w + sq_x - sq_y - sq_z);
     }
 
     return euler_angles;
