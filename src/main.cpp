@@ -80,24 +80,32 @@ void loop() {
 
             lastSend = millis();
 
-            imu::Quaternion imu_quat = bno.getQuat();
-            Eigen::Quaterniond eigen_quat;
-            imu_to_eigen(imu_quat, eigen_quat);
-            eigen_quat.normalize();
-
-            auto euler = eigen_quat.toRotationMatrix().eulerAngles(2, 1, 0);
-
-            double roll = euler[2];
-            double pitch = euler[1];
-            double yaw = euler[0];
-
+            imu::Vector <3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
             String message = "$";
-            message += String(millis() - start_time) + ": ";
-            message += String(roll * 180 / M_PI, DECIMALS) + ",";
-            message += String(pitch * 180 / M_PI, DECIMALS) + ",";
-            message += String(yaw * 180 / M_PI, DECIMALS);
-
+            message += String(euler.x()) + ", ";
+            message += String(euler.y()) + ", ";
+            message += String(euler.z());
             Serial.println(message);
+
+
+            // imu::Quaternion imu_quat = bno.getQuat();
+            // Eigen::Quaterniond eigen_quat;
+            // imu_to_eigen(imu_quat, eigen_quat);
+            // eigen_quat.normalize();
+
+            // auto euler = eigen_quat.toRotationMatrix().eulerAngles(2, 1, 0);
+
+            // double roll = euler[2];
+            // double pitch = euler[1];
+            // double yaw = euler[0];
+
+            // String message = "$";
+            // message += String(millis() - start_time) + ": ";
+            // message += String(roll * 180 / M_PI, DECIMALS) + ",";
+            // message += String(pitch * 180 / M_PI, DECIMALS) + ",";
+            // message += String(yaw * 180 / M_PI, DECIMALS);
+
+            // Serial.println(message);
         }
     }
 
