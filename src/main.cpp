@@ -7,6 +7,7 @@
 #include <EEPROM.h>
 #include <math.h>
 #include <vector.h>
+#include <ArduinoEigen.h>
 
 /*                                            */
 /*          Constants and Globals             */
@@ -18,7 +19,7 @@ sensor_t sensor;
 int eeprom_address;
 long bno_id;
 
-int lastSend = 0;
+unsigned long lastSend = 0;
 unsigned long start_time;
 uint16_t DECIMALS = 4;
 
@@ -33,6 +34,7 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 void get_eeprom();
 void put_eeprom();
 
+void imu_to_eigen(const imu::Quaternion&, Eigen::Quaterniond&);
 imu::Quaternion quaternion_conjugate(imu::Quaternion&);
 imu::Quaternion quaternion_normalize(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
@@ -78,15 +80,18 @@ void loop() {
 
             lastSend = millis();
 
+            imu::Quaternion imu_quat = bno.getQuat();
+            Eigen::Quaterniond eigen_quat;
+            imu_to_eigen(imu_quat, eigen_quat);
+            eigen_quat.normalize();
+
+            auto euler = eigen_quat.toRotationMatrix().eulerAngles(2, 1, 0);
+
+            double roll = euler[2];
+            double pitch = euler[1];
+            double yaw = euler[0];
+
             String message = "$";
-
-            imu::Quaternion measured_quat = bno.getQuat();
-            std::vector <double> euler_angles = quat_to_euler(measured_quat);
-
-            double roll = euler_angles[0];
-            double pitch = euler_angles[1];
-            double yaw = euler_angles[2];
-
             message += String(millis() - start_time) + ": ";
             message += String(roll * 180 / M_PI, DECIMALS) + ",";
             message += String(pitch * 180 / M_PI, DECIMALS) + ",";
@@ -164,6 +169,15 @@ void put_eeprom() {
 }
 
 
+// converts Quaternion object of imu library to that of Eigen library
+void imu_to_eigen(const imu::Quaternion& q1, Eigen::Quaterniond& q2) {
+    q2.w() = q1.w();
+    q2.x() = q1.x();
+    q2.y() = q1.y();
+    q2.z() = q1.z();
+}
+
+
 imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
 }
@@ -209,18 +223,18 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     double test = q.x() * q.y() + q.z() * q.w();
 
     // initial conditionals are for catching singularities when converting to Euler
-    if (test > 0.4999 * unit) {
+    if (test > 0.49995 * unit) {
         euler_angles[0] = 0;
-        euler_angles[1] = M_PI / 2;
-        euler_angles[2] = 2 * atan2(q.x(), q.w());
+        euler_angles[1] = 2 * atan2(q.x(), q.w());
+        euler_angles[2] = M_PI / 2;
     }
-    else if (test < -0.4999 * unit) {
+    else if (test < -0.49995 * unit) {
         euler_angles[0] = 0;
-        euler_angles[1] = -M_PI / 2;
-        euler_angles[2] = -2 * atan2(q.x(), q.w());
+        euler_angles[1] = -2 * atan2(q.x(), q.w());
+        euler_angles[2] = -M_PI / 2;
     }
     else {
-        euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), sq_y + sq_w - sq_x - sq_z);
+        euler_angles[0] = atan2(2 * (q.w() * q.x() - q.y() * q.z()), sq_w - sq_x + sq_y - sq_z);
         euler_angles[1] = atan2(2 * (q.w() * q.y() - q.x() * q.z()), sq_w + sq_x - sq_y - sq_z);
         euler_angles[2] = asin(2 * test / unit);
     }
