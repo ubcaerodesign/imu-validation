@@ -81,10 +81,11 @@ void loop() {
             lastSend = millis();
 
             imu::Vector <3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-            String message = "$";
-            message += String(euler.x()) + ", ";
-            message += String(euler.y()) + ", ";
-            message += String(euler.z());
+            String message = "$,";
+            message += String(millis() - start_time) + ",";
+            // message += String(euler.x()) + ", ";
+            message += String(euler.y() * M_PI / 180, DECIMALS);
+            // message += String(euler.z());
             Serial.println(message);
 
 
