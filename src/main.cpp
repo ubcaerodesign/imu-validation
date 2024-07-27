@@ -78,7 +78,7 @@ void loop() {
 
             lastSend = millis();
 
-            String message = "$";
+            String message = "$,";
 
             imu::Quaternion measured_quat = bno.getQuat();
             std::vector <double> euler_angles = quat_to_euler(measured_quat);
@@ -87,7 +87,7 @@ void loop() {
             double pitch = euler_angles[1];
             double yaw = euler_angles[2];
 
-            message += String(millis() - start_time) + ": ";
+            message += String(millis() - start_time) + ",";
             message += String(roll * 180 / M_PI, DECIMALS) + ",";
             message += String(pitch * 180 / M_PI, DECIMALS) + ",";
             message += String(yaw * 180 / M_PI, DECIMALS);
@@ -208,20 +208,17 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     double unit = sq_w + sq_x + sq_y + sq_z;
     double test = q.x() * q.y() + q.z() * q.w();
 
+    euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), sq_y + sq_w - sq_x - sq_z);
+    euler_angles[1] = atan2(2 * (q.w() * q.y() - q.x() * q.z()), sq_w + sq_x - sq_y - sq_z);
+
     // initial conditionals are for catching singularities when converting to Euler
     if (test > 0.4999 * unit) {
-        euler_angles[0] = 0;
-        euler_angles[1] = M_PI / 2;
-        euler_angles[2] = 2 * atan2(q.x(), q.w());
+        euler_angles[2] = M_PI / 2;
     }
     else if (test < -0.4999 * unit) {
-        euler_angles[0] = 0;
-        euler_angles[1] = -M_PI / 2;
-        euler_angles[2] = -2 * atan2(q.x(), q.w());
+        euler_angles[2] = -M_PI / 2;
     }
     else {
-        euler_angles[0] = atan2(2 * (q.w() * q.x() + q.y() * q.z()), sq_y + sq_w - sq_x - sq_z);
-        euler_angles[1] = atan2(2 * (q.w() * q.y() - q.x() * q.z()), sq_w + sq_x - sq_y - sq_z);
         euler_angles[2] = asin(2 * test / unit);
     }
 
