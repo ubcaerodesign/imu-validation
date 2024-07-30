@@ -78,8 +78,10 @@ void loop() {
 
             lastSend = millis();
 
+            // token to discern data when grabbing data using Python
             String message = "$,";
 
+            // quaternion to euler data
             imu::Quaternion measured_quat = bno.getQuat();
             std::vector <double> euler_angles = quat_to_euler(measured_quat);
 
@@ -87,10 +89,16 @@ void loop() {
             double pitch = euler_angles[1];
             double yaw = euler_angles[2];
 
-            message += String(millis() - start_time) + ",";
-            message += String(roll * 180 / M_PI, DECIMALS) + ",";
+            // accelerometer data
+            imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+            message += String(millis() - start_time)        + ",";
+            message += String(roll * 180 / M_PI, DECIMALS)  + ",";
             message += String(pitch * 180 / M_PI, DECIMALS) + ",";
-            message += String(yaw * 180 / M_PI, DECIMALS);
+            message += String(yaw * 180 / M_PI, DECIMALS)   + ",";
+            message += String(accel.x(), DECIMALS)          + ",";
+            message += String(accel.y(), DECIMALS)          + ",";
+            message += String(accel.z(), DECIMALS)          + ",";
 
             Serial.println(message);
         }
