@@ -178,7 +178,7 @@ imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
 
 imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     imu::Quaternion conjugate = quaternion_conjugate(q);
-    return quaternion_normalize(conjugate);
+    return conjugate;
 }
 
 
