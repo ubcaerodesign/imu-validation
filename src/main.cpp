@@ -33,8 +33,6 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 void get_eeprom();
 void put_eeprom();
 
-imu::Quaternion quaternion_conjugate(imu::Quaternion&);
-imu::Quaternion quaternion_normalize(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
@@ -78,8 +76,10 @@ void loop() {
 
             lastSend = millis();
 
+            // token to discern data when grabbing data using Python
             String message = "$,";
 
+            // quaternion to euler data
             imu::Quaternion measured_quat = bno.getQuat();
             std::vector <double> euler_angles = quat_to_euler(measured_quat);
 
@@ -87,10 +87,16 @@ void loop() {
             double pitch = euler_angles[1];
             double yaw = euler_angles[2];
 
-            message += String(millis() - start_time) + ",";
-            message += String(roll * 180 / M_PI, DECIMALS) + ",";
+            // accelerometer data
+            imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+            message += String(millis() - start_time)        + ",";
+            message += String(roll * 180 / M_PI, DECIMALS)  + ",";
             message += String(pitch * 180 / M_PI, DECIMALS) + ",";
-            message += String(yaw * 180 / M_PI, DECIMALS);
+            message += String(yaw * 180 / M_PI, DECIMALS)   + ",";
+            message += String(accel.x(), DECIMALS)          + ",";
+            message += String(accel.y(), DECIMALS)          + ",";
+            message += String(accel.z(), DECIMALS)          + ",";
 
             Serial.println(message);
         }
@@ -164,22 +170,9 @@ void put_eeprom() {
 }
 
 
-imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
+imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
 }
-
-
-imu::Quaternion quaternion_normalize(imu::Quaternion& q) {
-    double norm = quaternion_norm(q);
-    return imu::Quaternion(q.w() / norm, q.x() / norm, q.y() / norm, q.z() / norm);
-}
-
-
-imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
-    imu::Quaternion conjugate = quaternion_conjugate(q);
-    return quaternion_normalize(conjugate);
-}
-
 
 imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quaternion& q2) {
     return imu::Quaternion(
