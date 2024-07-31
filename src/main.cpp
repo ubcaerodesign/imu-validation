@@ -33,7 +33,6 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 void get_eeprom();
 void put_eeprom();
 
-imu::Quaternion quaternion_conjugate(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
@@ -171,16 +170,9 @@ void put_eeprom() {
 }
 
 
-imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
+imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
 }
-
-
-imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
-    imu::Quaternion conjugate = quaternion_conjugate(q);
-    return conjugate;
-}
-
 
 imu::Quaternion quaternion_multiply(const imu::Quaternion& q1, const imu::Quaternion& q2) {
     return imu::Quaternion(
