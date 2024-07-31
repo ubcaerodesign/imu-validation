@@ -34,7 +34,6 @@ void get_eeprom();
 void put_eeprom();
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion&);
-imu::Quaternion quaternion_normalize(imu::Quaternion&);
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
@@ -174,12 +173,6 @@ void put_eeprom() {
 
 imu::Quaternion quaternion_conjugate(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
-}
-
-
-imu::Quaternion quaternion_normalize(imu::Quaternion& q) {
-    double norm = quaternion_norm(q);
-    return imu::Quaternion(q.w() / norm, q.x() / norm, q.y() / norm, q.z() / norm);
 }
 
 
