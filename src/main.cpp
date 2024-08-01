@@ -26,6 +26,7 @@ int lastSend = 0;
 unsigned long start_time;
 
 imu::Vector <3> g_ref;
+imu::Vector <3> g_new;
 imu::Quaternion quat_ref;
 imu::Quaternion quat_ref_inverse;
 std::vector <std::vector <double>> rot_matrix {
@@ -59,6 +60,7 @@ std::vector <double> quat_to_euler(const imu::Quaternion&);
 
 void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <int>>&);
 void matrix_inverse(std::vector <std::vector <double>>&);
+void matrix_vector_multiply(const std::vector <std::vector <double>>&, const imu::Vector<3>&, imu::Vector<3>&);
 
 void setup() {
 
@@ -116,8 +118,8 @@ void loop() {
 
             // magnetometer data
             imu::Quaternion quat_diff = quaternion_multiply(quat_ref_inverse, measured_quat);
-
             quat_to_matrix(quat_diff, rot_matrix);
+            matrix_inverse(rot_matrix);
 
             message += String(millis() - start_time)        + ",";
             message += String(roll * 180 / M_PI, DECIMALS)  + ",";
@@ -295,6 +297,15 @@ void matrix_inverse(std::vector <std::vector <double>>& rot_matrix) {
     std::swap(rot_matrix[0][1], rot_matrix[1][0]);
     std::swap(rot_matrix[0][2], rot_matrix[2][0]);
     std::swap(rot_matrix[1][2], rot_matrix[2][1]);
+
+    return;
+}
+
+// multiply gravity vector by rotation matrix
+void matrix_vector_multiply(const std::vector <std::vector <double>>& rot_matrix, const imu::Vector<3>& g_ref, imu::Vector<3>& g_new) {
+    g_new.x() = rot_matrix[0][0] * g_ref.x() + rot_matrix[0][1] * g_ref.y() + rot_matrix[0][2] * g_ref.z();
+    g_new.y() = rot_matrix[1][0] * g_ref.x() + rot_matrix[1][1] * g_ref.y() + rot_matrix[1][2] * g_ref.z();
+    g_new.z() = rot_matrix[2][0] * g_ref.x() + rot_matrix[2][1] * g_ref.y() + rot_matrix[2][2] * g_ref.z();
 
     return;
 }
