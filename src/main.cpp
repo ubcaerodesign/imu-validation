@@ -12,6 +12,10 @@
 /*          Constants and Globals             */
 /*                                            */
 
+#define DECIMALS 4
+#define ACCEL_SYNC_TIME 5000
+#define ACCEL_SYNC_THRESHOLD 0.15
+
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 sensor_t sensor;
 
@@ -20,10 +24,7 @@ long bno_id;
 
 int lastSend = 0;
 unsigned long start_time;
-uint16_t DECIMALS = 4;
 
-int ACCEL_SYNC_TIME = 5000;
-double ACCEL_SYNC_THRESHOLD = 0.15;
 imu::Vector <3> g_ref;
 imu::Quaternion quat_ref;
 std::vector <std::vector <double>> rot_matrix {
