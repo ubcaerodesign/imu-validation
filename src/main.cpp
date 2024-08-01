@@ -52,6 +52,7 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternio
 
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
+void quat_to_matrix(const imu::Quaternion&);
 
 void setup() {
 
@@ -266,4 +267,18 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     }
 
     return euler_angles;
+}
+
+
+// convert quaternion to rotation matrix
+void quat_to_matrix(imu::Quaternion& q) {
+    rot_matrix[0][0] = 2 * (q.w() * q.w() + q.x() * q.x()) - 1;
+    rot_matrix[0][1] = 2 * (q.x() * q.y() - q.w() * q.z());
+    rot_matrix[0][2] = 2 * (q.x() * q.z() + q.w() * q.y());
+    rot_matrix[1][0] = 2 * (q.x() * q.y() + q.w() * q.z());
+    rot_matrix[1][1] = 2 * (q.w() * q.w() + q.y() * q.y()) - 1;
+    rot_matrix[1][2] = 2 * (q.y() * q.z() - q.w() * q.x());
+    rot_matrix[2][0] = 2 * (q.x() * q.z() - q.w() * q.y());
+    rot_matrix[2][1] = 2 * (q.y() * q.z() + q.w() * q.x());
+    rot_matrix[2][2] = 2 * (q.w() * q.w() + q.z() * q.z()) - 1;
 }
