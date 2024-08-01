@@ -52,7 +52,9 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternio
 
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
-void quat_to_matrix(const imu::Quaternion&);
+
+void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <int>>&);
+void matrix_inverse(std::vector <std::vector <double>>&);
 
 void setup() {
 
@@ -111,7 +113,7 @@ void loop() {
             // magnetometer data
             imu::Quaternion quat_diff = quaternion_multiply(quat_ref_inverse, measured_quat);
 
-
+            quat_to_matrix(quat_diff, rot_matrix);
 
             message += String(millis() - start_time)        + ",";
             message += String(roll * 180 / M_PI, DECIMALS)  + ",";
@@ -205,7 +207,7 @@ void get_ref() {
         // checks if acceleration components exceed defined threshold
         if ( !( abs(new_acc.x() - initial_acc.x()) < ACCEL_SYNC_THRESHOLD &&
                 abs(new_acc.y() - initial_acc.y()) < ACCEL_SYNC_THRESHOLD &&
-                abs(new_acc.z() - initial_acc.z()) < ACCEL_SYNC_THRESHOLD  )) {
+                abs(new_acc.z() - initial_acc.z()) < ACCEL_SYNC_THRESHOLD )) {
 
             // update start time and initial acceleration
             initial_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
@@ -271,7 +273,7 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
 
 
 // convert quaternion to rotation matrix
-void quat_to_matrix(imu::Quaternion& q) {
+void quat_to_matrix(const imu::Quaternion& q, std::vector <std::vector <double>>& rot_matrix) {
     rot_matrix[0][0] = 2 * (q.w() * q.w() + q.x() * q.x()) - 1;
     rot_matrix[0][1] = 2 * (q.x() * q.y() - q.w() * q.z());
     rot_matrix[0][2] = 2 * (q.x() * q.z() + q.w() * q.y());
