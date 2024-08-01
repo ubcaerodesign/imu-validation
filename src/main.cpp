@@ -27,6 +27,7 @@ unsigned long start_time;
 
 imu::Vector <3> g_ref;
 imu::Quaternion quat_ref;
+imu::Quaternion quat_ref_inverse;
 std::vector <std::vector <double>> rot_matrix {
     {0, 0, 0},
     {0, 0, 0},
@@ -44,7 +45,6 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 
 void get_eeprom();
 void put_eeprom();
-
 void get_ref();
 
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
@@ -79,6 +79,9 @@ void setup() {
     // load in fresher offsets into EEPROM memory
     put_eeprom();
 
+    // get reference gravity vector and quaternion
+    get_ref();
+
     bno.setExtCrystalUse(true);
     start_time = millis();
 }
@@ -90,7 +93,7 @@ void loop() {
 
             lastSend = millis();
 
-            // token to discern data when grabbing data using Python
+            // token to discern data when grabbing data through  Python
             String message = "$,";
 
             // quaternion to euler data
@@ -103,6 +106,11 @@ void loop() {
 
             // accelerometer data
             imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+            // magnetometer data
+            imu::Quaternion quat_diff = quaternion_multiply(quat_ref_inverse, measured_quat);
+
+
 
             message += String(millis() - start_time)        + ",";
             message += String(roll * 180 / M_PI, DECIMALS)  + ",";
@@ -207,6 +215,7 @@ void get_ref() {
     // get reference gravity vector and quaternion
     g_ref = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     quat_ref = bno.getQuat();
+    quat_ref_inverse = quaternion_inverse(quat_ref);
 
     return;
 }
