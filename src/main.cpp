@@ -33,7 +33,11 @@ std::vector <std::vector <double>> rot_matrix {
     {0, 0, 0},
     {0, 0, 0},
 };
-
+std::vector <std::vector <double>> rot_matrix_inverse {
+    {0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0},
+};
 
 
 /*                                            */
@@ -283,4 +287,14 @@ void quat_to_matrix(const imu::Quaternion& q, std::vector <std::vector <double>>
     rot_matrix[2][0] = 2 * (q.x() * q.z() - q.w() * q.y());
     rot_matrix[2][1] = 2 * (q.y() * q.z() + q.w() * q.x());
     rot_matrix[2][2] = 2 * (q.w() * q.w() + q.z() * q.z()) - 1;
+}
+
+
+// invert rotation matrix
+void matrix_inverse(std::vector <std::vector <double>>& rot_matrix) {
+    std::swap(rot_matrix[0][1], rot_matrix[1][0]);
+    std::swap(rot_matrix[0][2], rot_matrix[2][0]);
+    std::swap(rot_matrix[1][2], rot_matrix[2][1]);
+
+    return;
 }
