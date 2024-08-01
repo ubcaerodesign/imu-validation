@@ -12,6 +12,10 @@
 /*          Constants and Globals             */
 /*                                            */
 
+#define DECIMALS 4
+#define ACCEL_SYNC_TIME 5000
+#define ACCEL_SYNC_THRESHOLD 0.15
+
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 sensor_t sensor;
 
@@ -20,7 +24,20 @@ long bno_id;
 
 int lastSend = 0;
 unsigned long start_time;
-uint16_t DECIMALS = 4;
+
+imu::Vector <3> g_ref;
+imu::Quaternion quat_ref;
+imu::Quaternion quat_ref_inverse;
+std::vector <std::vector <double>> rot_matrix {
+    {0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0},
+};
+std::vector <std::vector <double>> rot_matrix_inverse {
+    {0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0},
+};
 
 
 /*                                            */
@@ -32,12 +49,16 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 
 void get_eeprom();
 void put_eeprom();
+void get_ref();
 
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
 
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
+
+void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <int>>&);
+void matrix_inverse(std::vector <std::vector <double>>&);
 
 void setup() {
 
@@ -65,6 +86,9 @@ void setup() {
     // load in fresher offsets into EEPROM memory
     put_eeprom();
 
+    // get reference gravity vector and quaternion
+    get_ref();
+
     bno.setExtCrystalUse(true);
     start_time = millis();
 }
@@ -76,7 +100,7 @@ void loop() {
 
             lastSend = millis();
 
-            // token to discern data when grabbing data using Python
+            // token to discern data when grabbing data through  Python
             String message = "$,";
 
             // quaternion to euler data
@@ -89,6 +113,11 @@ void loop() {
 
             // accelerometer data
             imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+            // magnetometer data
+            imu::Quaternion quat_diff = quaternion_multiply(quat_ref_inverse, measured_quat);
+
+            quat_to_matrix(quat_diff, rot_matrix);
 
             message += String(millis() - start_time)        + ",";
             message += String(roll * 180 / M_PI, DECIMALS)  + ",";
@@ -169,6 +198,34 @@ void put_eeprom() {
     EEPROM.put(eeprom_address, new_offsets);
 }
 
+void get_ref() {
+    // initial test variables
+    imu::Vector <3> initial_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    imu::Vector <3> new_acc;
+    unsigned long start_test = millis();
+
+    // checks if IMU is stationary within defined test duration
+    while ( millis() - start_test <= ACCEL_SYNC_TIME ) {
+        new_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+        // checks if acceleration components exceed defined threshold
+        if ( !( abs(new_acc.x() - initial_acc.x()) < ACCEL_SYNC_THRESHOLD &&
+                abs(new_acc.y() - initial_acc.y()) < ACCEL_SYNC_THRESHOLD &&
+                abs(new_acc.z() - initial_acc.z()) < ACCEL_SYNC_THRESHOLD )) {
+
+            // update start time and initial acceleration
+            initial_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+            start_test = millis();
+        }
+    }
+
+    // get reference gravity vector and quaternion
+    g_ref = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    quat_ref = bno.getQuat();
+    quat_ref_inverse = quaternion_inverse(quat_ref);
+
+    return;
+}
 
 imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
@@ -216,4 +273,28 @@ std::vector <double> quat_to_euler(const imu::Quaternion& q) {
     }
 
     return euler_angles;
+}
+
+
+// convert quaternion to rotation matrix
+void quat_to_matrix(const imu::Quaternion& q, std::vector <std::vector <double>>& rot_matrix) {
+    rot_matrix[0][0] = 2 * (q.w() * q.w() + q.x() * q.x()) - 1;
+    rot_matrix[0][1] = 2 * (q.x() * q.y() - q.w() * q.z());
+    rot_matrix[0][2] = 2 * (q.x() * q.z() + q.w() * q.y());
+    rot_matrix[1][0] = 2 * (q.x() * q.y() + q.w() * q.z());
+    rot_matrix[1][1] = 2 * (q.w() * q.w() + q.y() * q.y()) - 1;
+    rot_matrix[1][2] = 2 * (q.y() * q.z() - q.w() * q.x());
+    rot_matrix[2][0] = 2 * (q.x() * q.z() - q.w() * q.y());
+    rot_matrix[2][1] = 2 * (q.y() * q.z() + q.w() * q.x());
+    rot_matrix[2][2] = 2 * (q.w() * q.w() + q.z() * q.z()) - 1;
+}
+
+
+// invert rotation matrix
+void matrix_inverse(std::vector <std::vector <double>>& rot_matrix) {
+    std::swap(rot_matrix[0][1], rot_matrix[1][0]);
+    std::swap(rot_matrix[0][2], rot_matrix[2][0]);
+    std::swap(rot_matrix[1][2], rot_matrix[2][1]);
+
+    return;
 }
