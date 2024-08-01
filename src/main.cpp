@@ -22,6 +22,8 @@ int lastSend = 0;
 unsigned long start_time;
 uint16_t DECIMALS = 4;
 
+int ACCEL_SYNC_TIME = 5000;
+double ACCEL_SYNC_THRESHOLD = 0.15;
 imu::Vector <3> g_ref;
 imu::Quaternion quat_ref;
 std::vector <std::vector <double>> rot_matrix {
@@ -29,6 +31,7 @@ std::vector <std::vector <double>> rot_matrix {
     {0, 0, 0},
     {0, 0, 0},
 };
+
 
 
 /*                                            */
@@ -179,6 +182,24 @@ void put_eeprom() {
     EEPROM.put(eeprom_address, new_offsets);
 }
 
+void get_ref() {
+    imu::Vector <3> initial_acc =  bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    imu::Vector <3> new_acc;
+    unsigned long start_test = millis();
+
+    while ( millis() - start_test <= ACCEL_SYNC_TIME ) {
+        new_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+        if ( !( abs(new_acc.x() - initial_acc.x()) < ACCEL_SYNC_THRESHOLD &&
+                abs(new_acc.y() - initial_acc.y()) < ACCEL_SYNC_THRESHOLD &&
+                abs(new_acc.z() - initial_acc.z()) < ACCEL_SYNC_THRESHOLD  )) {
+            start_test = millis();
+        }
+    }
+
+    g_ref = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    quat_ref = bno.getQuat();
+    return;
+}
 
 imu::Quaternion quaternion_inverse(imu::Quaternion& q) {
     return imu::Quaternion(q.w(), -q.x(), -q.y(), -q.z());
