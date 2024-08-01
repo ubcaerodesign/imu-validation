@@ -22,6 +22,14 @@ int lastSend = 0;
 unsigned long start_time;
 uint16_t DECIMALS = 4;
 
+imu::Vector <3> g_ref;
+imu::Quaternion quat_ref;
+std::vector <std::vector <double>> rot_matrix {
+    {0, 0, 0},
+    {0, 0, 0},
+    {0, 0, 0},
+};
+
 
 /*                                            */
 /*             Function Prototypes            */
@@ -32,6 +40,8 @@ void print_calibration(uint8_t, uint8_t, uint8_t);
 
 void get_eeprom();
 void put_eeprom();
+
+void get_ref();
 
 imu::Quaternion quaternion_inverse(imu::Quaternion&);
 imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternion&);
