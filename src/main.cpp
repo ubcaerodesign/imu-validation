@@ -183,21 +183,30 @@ void put_eeprom() {
 }
 
 void get_ref() {
-    imu::Vector <3> initial_acc =  bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    // initial test variables
+    imu::Vector <3> initial_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     imu::Vector <3> new_acc;
     unsigned long start_test = millis();
 
+    // checks if IMU is stationary within defined test duration
     while ( millis() - start_test <= ACCEL_SYNC_TIME ) {
         new_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+
+        // checks if acceleration components exceed defined threshold
         if ( !( abs(new_acc.x() - initial_acc.x()) < ACCEL_SYNC_THRESHOLD &&
                 abs(new_acc.y() - initial_acc.y()) < ACCEL_SYNC_THRESHOLD &&
                 abs(new_acc.z() - initial_acc.z()) < ACCEL_SYNC_THRESHOLD  )) {
+
+            // update start time and initial acceleration
+            initial_acc = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
             start_test = millis();
         }
     }
 
+    // get reference gravity vector and quaternion
     g_ref = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     quat_ref = bno.getQuat();
+
     return;
 }
 
