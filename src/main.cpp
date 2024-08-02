@@ -60,7 +60,8 @@ std::vector <double> quat_to_euler(const imu::Quaternion&);
 
 void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <int>>&);
 void matrix_inverse(std::vector <std::vector <double>>&);
-void matrix_vector_multiply(const std::vector <std::vector <double>>&, const imu::Vector<3>&, imu::Vector<3>&);
+void matrix_vector_multiply(const std::vector <std::vector <double>>&, const imu::Vector <3>&, imu::Vector <3>&);
+std::vector <double> plane_projection(const imu::Vector <3>&, const imu::Vector <3>&);
 
 void setup() {
 
@@ -114,20 +115,26 @@ void loop() {
             double yaw = euler_angles[2];
 
             // accelerometer data
-            imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
+            imu::Vector <3> accel_vec = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
 
             // magnetometer data
             imu::Quaternion quat_diff = quaternion_multiply(quat_ref_inverse, measured_quat);
             quat_to_matrix(quat_diff, rot_matrix);
             matrix_inverse(rot_matrix);
+            matrix_vector_multiply(rot_matrix, g_ref, g_new);
+            
+            imu::Vector <3> mag_vec = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
+            std::vector <double> mag_proj = plane_projection(g_new, mag_vec);
+
+            double heading = atan2(mag_proj[1], mag_proj[0]);
 
             message += String(millis() - start_time)        + ",";
             message += String(roll * 180 / M_PI, DECIMALS)  + ",";
             message += String(pitch * 180 / M_PI, DECIMALS) + ",";
             message += String(yaw * 180 / M_PI, DECIMALS)   + ",";
-            message += String(accel.x(), DECIMALS)          + ",";
-            message += String(accel.y(), DECIMALS)          + ",";
-            message += String(accel.z(), DECIMALS)          + ",";
+            message += String(accel_vec.x(), DECIMALS)          + ",";
+            message += String(accel_vec.y(), DECIMALS)          + ",";
+            message += String(accel_vec.z(), DECIMALS)          + ",";
 
             Serial.println(message);
         }
@@ -302,10 +309,25 @@ void matrix_inverse(std::vector <std::vector <double>>& rot_matrix) {
 }
 
 // multiply gravity vector by rotation matrix
-void matrix_vector_multiply(const std::vector <std::vector <double>>& rot_matrix, const imu::Vector<3>& g_ref, imu::Vector<3>& g_new) {
+void matrix_vector_multiply(const std::vector <std::vector <double>>& rot_matrix, const imu::Vector <3>& g_ref, imu::Vector <3>& g_new) {
     g_new.x() = rot_matrix[0][0] * g_ref.x() + rot_matrix[0][1] * g_ref.y() + rot_matrix[0][2] * g_ref.z();
     g_new.y() = rot_matrix[1][0] * g_ref.x() + rot_matrix[1][1] * g_ref.y() + rot_matrix[1][2] * g_ref.z();
     g_new.z() = rot_matrix[2][0] * g_ref.x() + rot_matrix[2][1] * g_ref.y() + rot_matrix[2][2] * g_ref.z();
 
     return;
+}
+
+// project magnetometer vector onto new gravity vector
+std::vector <double> plane_projection(const imu::Vector <3>& g, const imu::Vector <3>& mag) {
+    double dot_prod = g.x() * mag.x() + g.y() * mag.y() + g.z() * mag.z();
+    double g_mag = g.x() * g.x() + g.y() * g.y() + g.z() * g.z();
+
+    // just using projection formula here
+    std::vector <double> mag_proj = {
+        dot_prod * g.x() / g_mag,
+        dot_prod * g.y() / g_mag,
+        dot_prod * g.z() / g_mag,
+    };
+
+    return mag_proj;
 }
