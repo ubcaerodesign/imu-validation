@@ -110,6 +110,7 @@ void setup() {
     put_eeprom();
 
     // get reference gravity vector and quaternion
+    Serial.println("Getting reference quaternion and g!");
     get_ref();
 
     bno.setExtCrystalUse(true);
@@ -118,8 +119,8 @@ void setup() {
 
 
 void loop() {
-    while (!calibrate(false)) {
-        if (millis() - lastSend > 20) {
+    if (calibrate(false)) {
+        if (millis() - lastSend > 20) {           
 
             lastSend = millis();
 
@@ -142,25 +143,105 @@ void loop() {
             quat_to_matrix(quat_diff, rot_matrix);
             matrix_inverse(rot_matrix);
             matrix_vector_multiply(rot_matrix, g_ref, g_new);
+
+            // Serial.print(g_new.x());
+            // Serial.print(", ");
+            // Serial.print(g_new.y());
+            // Serial.print(", ");
+            // Serial.print(g_new.z());
+            // Serial.print("...");
+
+            // Serial.print(accel_vec.x());
+            // Serial.print(", ");
+            // Serial.print(accel_vec.y());
+            // Serial.print(", ");
+            // Serial.print(accel_vec.z());
+            // Serial.println();
+
             
             imu::Vector <3> mag_vec = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-            std::vector <double> mag_proj = plane_projection(g_new, mag_vec);
+            imu::Vector <3> mag_proj = plane_projection(g_new, mag_vec);
 
-            double heading = atan2(mag_proj[1], mag_proj[0]);
+            theta_M = atan2(g_new.x() / GRAVITY, g_new.z() / GRAVITY);
+            phi_M = atan2(g_new.y() / GRAVITY, g_new.z() / GRAVITY);
+            phi_F_new = 0.95 * phi_F_old + 0.05 * phi_M;
+            theta_F_new = 0.95 * theta_F_old + 0.05 * theta_M;
 
-            message += String(millis() - start_time)        + ",";
-            message += String(roll * 180 / M_PI, DECIMALS)  + ",";
-            message += String(pitch * 180 / M_PI, DECIMALS) + ",";
-            message += String(yaw * 180 / M_PI, DECIMALS)   + ",";
-            message += String(accel_vec.x(), DECIMALS)          + ",";
-            message += String(accel_vec.y(), DECIMALS)          + ",";
-            message += String(accel_vec.z(), DECIMALS)          + ",";
+            dt = (millis() - millisOld) / 1000;
+            millisOld = millis();
+            theta = theta * 0.95 + theta_M * 0.05;
+            phi = phi * 0.95 + phi_M * 0.05;
 
-            Serial.println(message);
+            Xm = mag_vec.x() * cos(theta) - mag_vec.y() * sin(phi) * sin(theta) + mag_vec.z() * cos(phi) * sin(theta);
+            Ym = mag_vec.y() * cos(phi) + mag_vec.z() * sin(phi);
+
+            psi = atan2(Ym, Xm) * 180 / M_PI;
+
+            theta_F_old = theta_F_new;
+            phi_F_old = phi_F_new;
+
+            if (psi < 0) {
+                psi += 360;
+            }
+
+            Serial.println(psi);
+
+
+
+            // Serial.print(mag_vec.x());
+            // Serial.print(", ");
+            // Serial.print(mag_vec.y());
+            // Serial.print(", ");
+            // Serial.print(mag_vec.z());
+            // Serial.print("... ");
+
+            // Serial.print(mag_proj.x());
+            // Serial.print(", ");
+            // Serial.print(mag_proj.y());
+            // Serial.print(", ");
+            // Serial.print(mag_proj.z());
+            // Serial.println();
+
+
+            double proj_heading = atan2(mag_proj.y(), mag_proj.x());
+            double heading = atan2(mag_vec.y(), mag_vec.x());
+
+
+            heading *= 180 / M_PI;
+            if (heading < 0) heading += 360;
+            proj_heading *= 180 / M_PI;
+            if (proj_heading < 0) proj_heading += 360;
+
+            // Serial.print(heading);
+            // Serial.print("...");
+            // Serial.print(proj_heading);
+            // Serial.println();
+
+            // message += String(heading, DECIMALS);
+            // message += String(mag_vec.x(), DECIMALS)    + ", ";
+            // message += String(mag_vec.y(), DECIMALS)    + ", ";
+            // message += String(mag_vec.z(), DECIMALS)    + ", ";
+            // message += String(heading, DECIMALS)        + ", ";
+            // message += String(proj_heading, DECIMALS)        + ", ";
+
+
+            // message += String(millis() - start_time)            + ",";
+            // message += String(roll * 180 / M_PI, DECIMALS)      + ",";
+            // message += String(pitch * 180 / M_PI, DECIMALS)     + ",";
+            // message += String(yaw * 180 / M_PI, DECIMALS)       + ",";
+            // message += String(accel_vec.x(), DECIMALS)          + ",";
+            // message += String(accel_vec.y(), DECIMALS)          + ",";
+            // message += String(accel_vec.z(), DECIMALS)          + ",";
+
+            //Serial.println(message);
         }
-    }
+    } else {
+        while (!calibrate(true)) {
+            delay(50);
+        }
 
-    
+        put_eeprom();
+    }
 
     delay(10);
 }
@@ -338,16 +419,17 @@ void matrix_vector_multiply(const std::vector <std::vector <double>>& rot_matrix
 }
 
 // project magnetometer vector onto new gravity vector
-std::vector <double> plane_projection(const imu::Vector <3>& g, const imu::Vector <3>& mag) {
+imu::Vector <3> plane_projection(const imu::Vector <3>& g, const imu::Vector <3>& mag) {
     double dot_prod = g.x() * mag.x() + g.y() * mag.y() + g.z() * mag.z();
     double g_mag = g.x() * g.x() + g.y() * g.y() + g.z() * g.z();
 
     // just using projection formula here
-    std::vector <double> mag_proj = {
-        dot_prod * g.x() / g_mag,
-        dot_prod * g.y() / g_mag,
-        dot_prod * g.z() / g_mag,
-    };
+    imu::Vector <3> mag_proj;
+    mag_proj.x(), mag_proj.y(), mag_proj.z() = dot_prod * g.x() / g_mag, dot_prod * g.y() / g_mag, dot_prod * g.z() / g_mag;
+
+    mag_proj.x() = g.x() * dot_prod / g_mag;
+    mag_proj.y() = g.y() * dot_prod / g_mag;
+    mag_proj.z() = g.z() * dot_prod / g_mag;
 
     return mag_proj;
 }
