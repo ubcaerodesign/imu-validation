@@ -13,8 +13,9 @@
 /*                                            */
 
 #define DECIMALS 4
-#define ACCEL_SYNC_TIME 5000
+#define ACCEL_SYNC_TIME 500
 #define ACCEL_SYNC_THRESHOLD 0.15
+#define GRAVITY 9.80665
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 sensor_t sensor;
@@ -40,6 +41,25 @@ std::vector <std::vector <double>> rot_matrix_inverse {
     {0, 0, 0},
 };
 
+double theta_M;
+double phi_M;
+
+double theta_F_old=0;
+double theta_F_new;
+
+double phi_F_old=0;
+double phi_F_new;
+ 
+double theta;
+double phi;
+ 
+double Xm;
+double Ym;
+double psi;
+
+double dt;
+unsigned long millisOld;
+
 
 /*                                            */
 /*             Function Prototypes            */
@@ -58,10 +78,10 @@ imu::Quaternion quaternion_multiply(const imu::Quaternion&, const imu::Quaternio
 double quaternion_norm(imu::Quaternion&);
 std::vector <double> quat_to_euler(const imu::Quaternion&);
 
-void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <int>>&);
+void quat_to_matrix(const imu::Quaternion&, std::vector <std::vector <double>>&);
 void matrix_inverse(std::vector <std::vector <double>>&);
 void matrix_vector_multiply(const std::vector <std::vector <double>>&, const imu::Vector <3>&, imu::Vector <3>&);
-std::vector <double> plane_projection(const imu::Vector <3>&, const imu::Vector <3>&);
+imu::Vector <3> plane_projection(const imu::Vector <3>&, const imu::Vector <3>&);
 
 void setup() {
 
