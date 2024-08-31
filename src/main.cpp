@@ -41,21 +41,13 @@ std::vector <std::vector <double>> rot_matrix_inverse {
     {0, 0, 0},
 };
 
-double theta_M;
-double phi_M;
+double theta_M, phi_M;
 
-double theta_F_old=0;
-double theta_F_new;
-
-double phi_F_old=0;
-double phi_F_new;
+double theta_F_old = 0, phi_F_old = 0;
+double theta_F_new, phi_F_new;
  
-double theta;
-double phi;
- 
-double Xm;
-double Ym;
-double psi;
+double theta, phi;
+double Xm, Ym, psi;
 
 double dt;
 unsigned long millisOld;
