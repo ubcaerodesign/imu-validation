@@ -116,7 +116,7 @@ void loop() {
 
             lastSend = millis();
 
-            // token to discern data when grabbing data through  Python
+            // token to discern data when grabbing data through Python
             String message = "$,";
 
             // quaternion to euler data
@@ -127,7 +127,7 @@ void loop() {
             double pitch = euler_angles[1];
             double yaw = euler_angles[2];
 
-            // accelerometer data
+            // accelerometer data 
             imu::Vector <3> accel_vec = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
 
             // magnetometer data
@@ -136,23 +136,9 @@ void loop() {
             matrix_inverse(rot_matrix);
             matrix_vector_multiply(rot_matrix, g_ref, g_new);
 
-            // Serial.print(g_new.x());
-            // Serial.print(", ");
-            // Serial.print(g_new.y());
-            // Serial.print(", ");
-            // Serial.print(g_new.z());
-            // Serial.print("...");
-
-            // Serial.print(accel_vec.x());
-            // Serial.print(", ");
-            // Serial.print(accel_vec.y());
-            // Serial.print(", ");
-            // Serial.print(accel_vec.z());
-            // Serial.println();
-
-            
+            // imu::Vector <3> mag_proj = plane_projection(g_new, mag_vec);
             imu::Vector <3> mag_vec = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-            imu::Vector <3> mag_proj = plane_projection(g_new, mag_vec);
+
 
             theta_M = atan2(g_new.x() / GRAVITY, g_new.z() / GRAVITY);
             phi_M = atan2(g_new.y() / GRAVITY, g_new.z() / GRAVITY);
@@ -178,36 +164,14 @@ void loop() {
 
             Serial.println(psi);
 
-
-
-            // Serial.print(mag_vec.x());
-            // Serial.print(", ");
-            // Serial.print(mag_vec.y());
-            // Serial.print(", ");
-            // Serial.print(mag_vec.z());
-            // Serial.print("... ");
-
-            // Serial.print(mag_proj.x());
-            // Serial.print(", ");
-            // Serial.print(mag_proj.y());
-            // Serial.print(", ");
-            // Serial.print(mag_proj.z());
-            // Serial.println();
-
-
-            double proj_heading = atan2(mag_proj.y(), mag_proj.x());
+            // double proj_heading = atan2(mag_proj.y(), mag_proj.x());
             double heading = atan2(mag_vec.y(), mag_vec.x());
 
-
+            // proj_heading *= 180 / M_PI;
+            // if (proj_heading < 0) proj_heading += 360;
             heading *= 180 / M_PI;
             if (heading < 0) heading += 360;
-            proj_heading *= 180 / M_PI;
-            if (proj_heading < 0) proj_heading += 360;
 
-            // Serial.print(heading);
-            // Serial.print("...");
-            // Serial.print(proj_heading);
-            // Serial.println();
 
             // message += String(heading, DECIMALS);
             // message += String(mag_vec.x(), DECIMALS)    + ", ";
