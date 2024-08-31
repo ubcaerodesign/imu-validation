@@ -75,6 +75,7 @@ void matrix_inverse(std::vector <std::vector <double>>&);
 void matrix_vector_multiply(const std::vector <std::vector <double>>&, const imu::Vector <3>&, imu::Vector <3>&);
 imu::Vector <3> plane_projection(const imu::Vector <3>&, const imu::Vector <3>&);
 
+
 void setup() {
 
     Serial.begin(115200);
@@ -117,7 +118,7 @@ void loop() {
             lastSend = millis();
 
             // token to discern data when grabbing data through Python
-            String message = "$,";
+            String message = "$; ";
 
             // quaternion to euler data
             imu::Quaternion measured_quat = bno.getQuat();
@@ -138,7 +139,6 @@ void loop() {
 
             // imu::Vector <3> mag_proj = plane_projection(g_new, mag_vec);
             imu::Vector <3> mag_vec = bno.getVector(Adafruit_BNO055::VECTOR_MAGNETOMETER);
-
 
             theta_M = atan2(g_new.x() / GRAVITY, g_new.z() / GRAVITY);
             phi_M = atan2(g_new.y() / GRAVITY, g_new.z() / GRAVITY);
@@ -165,31 +165,24 @@ void loop() {
             Serial.println(psi);
 
             // double proj_heading = atan2(mag_proj.y(), mag_proj.x());
-            double heading = atan2(mag_vec.y(), mag_vec.x());
+            // double heading = atan2(mag_vec.y(), mag_vec.x());
 
             // proj_heading *= 180 / M_PI;
             // if (proj_heading < 0) proj_heading += 360;
-            heading *= 180 / M_PI;
-            if (heading < 0) heading += 360;
+            // heading *= 180 / M_PI;
+            // if (heading < 0) heading += 360;
 
+            message += String(millis() - start_time)            + ";";
+            message += String(roll * 180 / M_PI, DECIMALS)      + ";";
+            message += String(pitch * 180 / M_PI, DECIMALS)     + ";";
+            message += String(yaw * 180 / M_PI, DECIMALS)       + ";";
+            message += String(accel_vec.x(), DECIMALS)          + ";";
+            message += String(accel_vec.y(), DECIMALS)          + ";";
+            message += String(accel_vec.z(), DECIMALS)          + ";";
+            message += String(psi, DECIMALS)                    + ";";
 
-            // message += String(heading, DECIMALS);
-            // message += String(mag_vec.x(), DECIMALS)    + ", ";
-            // message += String(mag_vec.y(), DECIMALS)    + ", ";
-            // message += String(mag_vec.z(), DECIMALS)    + ", ";
-            // message += String(heading, DECIMALS)        + ", ";
-            // message += String(proj_heading, DECIMALS)        + ", ";
+            Serial.println(message);
 
-
-            // message += String(millis() - start_time)            + ",";
-            // message += String(roll * 180 / M_PI, DECIMALS)      + ",";
-            // message += String(pitch * 180 / M_PI, DECIMALS)     + ",";
-            // message += String(yaw * 180 / M_PI, DECIMALS)       + ",";
-            // message += String(accel_vec.x(), DECIMALS)          + ",";
-            // message += String(accel_vec.y(), DECIMALS)          + ",";
-            // message += String(accel_vec.z(), DECIMALS)          + ",";
-
-            //Serial.println(message);
         }
     } else {
         while (!calibrate(true)) {
