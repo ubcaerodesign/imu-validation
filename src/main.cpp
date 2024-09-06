@@ -28,8 +28,11 @@ unsigned long start_time;
 
 imu::Vector <3> g_ref;
 imu::Vector <3> g_new;
+
 imu::Quaternion quat_ref;
 imu::Quaternion quat_ref_inverse;
+imu::Quaternion quat_change(0.5, -0.5, -0.5, 0.5);
+
 std::vector <std::vector <double>> rot_matrix {
     {0, 0, 0},
     {0, 0, 0},
@@ -122,7 +125,8 @@ void loop() {
 
             // quaternion to euler data
             imu::Quaternion measured_quat = bno.getQuat();
-            std::vector <double> euler_angles = quat_to_euler(measured_quat);
+            imu::Quaternion converted_quat = quaternion_multiply(quat_change, measured_quat);
+            std::vector <double> euler_angles = quat_to_euler(converted_quat);
 
             double roll = euler_angles[0];
             double pitch = euler_angles[1];
@@ -172,14 +176,15 @@ void loop() {
             // heading *= 180 / M_PI;
             // if (heading < 0) heading += 360;
 
-            message += String(millis() - start_time)            + ";";
-            message += String(roll * 180 / M_PI, DECIMALS)      + ";";
-            message += String(pitch * 180 / M_PI, DECIMALS)     + ";";
-            message += String(yaw * 180 / M_PI, DECIMALS)       + ";";
+            message += String(millis() - start_time)            + "; ";
+            message += String(roll * 180 / M_PI, DECIMALS)      + "; ";
+            message += String(pitch * 180 / M_PI, DECIMALS)     + "; ";
+            message += String(yaw * 180 / M_PI, DECIMALS)       + "; ";
             message += String(accel_vec.x(), DECIMALS)          + ";";
             message += String(accel_vec.y(), DECIMALS)          + ";";
             message += String(accel_vec.z(), DECIMALS)          + ";";
             message += String(psi, DECIMALS)                    + ";";
+            message += String(atan2(mag_vec.y(), mag_vec.x() * 180 / M_PI), DECIMALS);
 
             Serial.println(message);
 
